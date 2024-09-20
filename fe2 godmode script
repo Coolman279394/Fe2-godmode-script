@@ -1,0 +1,183 @@
+local Player = game.Players.LocalPlayer.Character
+local clip = true
+local godModeEnabled = false
+local autoPlayEnabled = false
+
+local GUI = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local NoClip = Instance.new("TextButton")
+local GodMode = Instance.new("TextButton")
+local AutoPlay = Instance.new("TextButton")
+local X = Instance.new("TextButton")
+
+GUI.Parent = game.CoreGui
+
+MainFrame.Parent = GUI
+MainFrame.BackgroundColor3 = Color3.fromRGB(34, 34, 34) -- Dark grey background
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.4, 0, 0.4, 0)
+MainFrame.Size = UDim2.new(0, 300, 0, 220) -- Increased height for better organization
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+NoClip.Parent = MainFrame
+NoClip.BackgroundColor3 = Color3.fromRGB(51, 51, 51) -- Dark grey
+NoClip.Position = UDim2.new(0.03, 0, 0.05, 0)
+NoClip.Size = UDim2.new(0, 125, 0, 36)
+NoClip.Font = Enum.Font.SourceSansBold
+NoClip.FontSize = Enum.FontSize.Size24
+NoClip.Text = "NoClip (Off)"
+NoClip.TextColor3 = Color3.new(1, 1, 1)
+NoClip.MouseButton1Down:Connect(function()
+    if clip then
+        clip = false
+        NoClip.BackgroundColor3 = Color3.fromRGB(26, 140, 255) -- Blue
+        NoClip.Text = "NoClip (On)"
+        warn("[GUI] NoClip Enabled!")
+    else
+        clip = true
+        NoClip.BackgroundColor3 = Color3.fromRGB(51, 51, 51) -- Dark grey
+        NoClip.Text = "NoClip (Off)"
+        warn("[GUI] NoClip Disabled!")
+    end
+    game:GetService("RunService"):BindToRenderStep("", 0, function()
+        if not game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            return
+        end
+        if not clip then
+            game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(11)
+        end
+    end)
+end)
+
+GodMode.Parent = MainFrame
+GodMode.BackgroundColor3 = Color3.fromRGB(153, 0, 0) -- Dark red
+GodMode.Position = UDim2.new(0.03, 0, 0.2, 0)
+GodMode.Size = UDim2.new(0, 125, 0, 36)
+GodMode.Font = Enum.Font.SourceSansBold
+GodMode.FontSize = Enum.FontSize.Size24
+GodMode.Text = "God Mode (Off)"
+GodMode.TextColor3 = Color3.new(1, 1, 1)
+GodMode.MouseButton1Down:Connect(function()
+    if godModeEnabled then
+        godModeEnabled = false
+        GodMode.BackgroundColor3 = Color3.fromRGB(153, 0, 0) -- Dark red
+        GodMode.Text = "God Mode (Off)"
+        warn("[GUI] God Mode Disabled!")
+    else
+        godModeEnabled = true
+        GodMode.BackgroundColor3 = Color3.fromRGB(0, 204, 0) -- Green
+        GodMode.Text = "God Mode (On)"
+        warn("[GUI] God Mode Enabled!")
+    end
+    local Humanoid = Player.Humanoid
+    if godModeEnabled then
+        Humanoid.MaxHealth = 999999
+        Humanoid.Health = Humanoid.MaxHealth / 2
+    else
+        Humanoid.MaxHealth = 100 -- Reset the max health back to normal
+        Humanoid.Health = Humanoid.MaxHealth
+    end
+    Humanoid.HealthChanged:Connect(function()
+        if Humanoid.Health < 10 then
+            Humanoid.Health = Humanoid.MaxHealth
+        end
+    end)
+end)
+
+AutoPlay.Parent = MainFrame
+AutoPlay.BackgroundColor3 = Color3.fromRGB(204, 204, 204) -- Light grey
+AutoPlay.Position = UDim2.new(0.03, 0, 0.35, 0)
+AutoPlay.Size = UDim2.new(0, 125, 0, 36)
+AutoPlay.Font = Enum.Font.SourceSansBold
+AutoPlay.FontSize = Enum.FontSize.Size24
+AutoPlay.Text = "Auto Play (Off)"
+AutoPlay.TextColor3 = Color3.new(1, 1, 1)
+AutoPlay.MouseButton1Down:Connect(function()
+    if autoPlayEnabled then
+        autoPlayEnabled = false
+        AutoPlay.BackgroundColor3 = Color3.fromRGB(204, 204, 204) -- Light grey
+        AutoPlay.Text = "Auto Play (Off)"
+        warn("[GUI] Auto Play Disabled!")
+    else
+        autoPlayEnabled = true
+        AutoPlay.BackgroundColor3 = Color3.fromRGB(0, 204, 0) -- Green
+        AutoPlay.Text = "Auto Play (On)"
+        warn("[GUI] Auto Play Enabled!")
+        game:GetService("RunService"):BindToRenderStep("PressButtons", 0, function()
+            if autoPlayEnabled then
+                PressButtons()
+            end
+        end)
+    end
+end)
+
+X.Parent = MainFrame
+X.BackgroundTransparency = 1
+X.Position = UDim2.new(0.93, 0, 0, 0)
+X.Size = UDim2.new(0, 20, 0, 20)
+X.Font = Enum.Font.SourceSansBold
+X.FontSize = Enum.FontSize.Size24
+X.Text = "X"
+X.TextColor3 = Color3.new(1, 1, 1)
+X.MouseButton1Down:Connect(function()
+    clip = true -- Resetting clip to true to avoid potential issues with NoClip
+    on = false
+    MainFrame:Remove()
+end)
+
+-- Function to teleport the player to the exit region
+function TeleportToExit()
+    local exit = game.Workspace.Multiplayer.Map:FindFirstChild("ExitRegion")
+    if exit then
+        local exitPosition = exit.Position
+        -- Teleport the player slightly inside the exit region
+        Player.HumanoidRootPart.CFrame = CFrame.new(exitPosition + Vector3.new(0, 2, 0))
+    else
+        warn("[GUI] Exit not found!")
+    end
+end
+
+-- Function to press Auto Play buttons
+function PressButtons()
+    local waittime = 0.3 -- Adjust this wait time as needed
+    local Map = game.Workspace.Multiplayer.Map
+    local Btns = {}
+    local Desc = {}
+    for i, v in pairs(Map:GetDescendants()) do
+        Desc[v.Name .. "Obj"] = v
+    end
+    for i = 0, 30 do
+        if Desc["_Button" .. tostring(i) .. "Obj"] then
+            table.insert(Btns, Desc["_Button" .. tostring(i) .. "Obj"])
+        end
+    end
+    for i, v in ipairs(Btns) do
+        local Hitbox = v.Hitbox
+        Player.HumanoidRootPart.CFrame = Hitbox.CFrame
+        wait(waittime)
+    end
+    -- After pressing all buttons, teleport to the exit region
+    TeleportToExit()
+end
+
+-- Detect if the player enters or leaves the exit region
+local exitRegion = game.Workspace.Multiplayer.Map:FindFirstChild("ExitRegion")
+if exitRegion then
+    exitRegion.Touched:Connect(function(hit)
+        if hit.Parent == Player then
+            AutoPlay.BackgroundColor3 = Color3.fromRGB(204, 204, 204) -- Light grey
+            AutoPlay.Text = "Auto Play (Off)"
+            autoPlayEnabled = false
+            wait(14) -- Wait 14 seconds to ensure the map has been loaded
+            AutoPlay.BackgroundColor3 = Color3.fromRGB(0, 204, 0) -- Green
+            AutoPlay.Text = "Auto Play (On)"
+            autoPlayEnabled = true
+            game:GetService("RunService"):BindToRenderStep("PressButtons", 0, function()
+                if autoPlayEnabled then
+                    PressButtons()
+                end
+            end)
+        end
+    end)
+end
